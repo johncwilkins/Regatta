@@ -1,6 +1,6 @@
 # Regatta
 
-A browser sailing game built around Wilk’s Laser model. Four boats race an arcade course with wind puffs, trim, right-of-way penalties, and buoy rounding.
+A browser sailing game built around Wilk’s Laser model. Six boats race an arcade course with wind puffs, trim, right-of-way penalties, and buoy rounding.
 
 ## Put it on GitHub Pages
 
@@ -26,8 +26,8 @@ Open **How to sail** in the game for a quick desktop/mobile guide, or visit `hel
 - Restart Race opens course, lap, and wind-speed choices. Click Start, then return to the tiller for the countdown.
 - Be fully behind the line at the starting gun. An early starter must return behind it and cross again.
 - Round the marks on their exterior capture side. The next-mark dial and map guide the course.
-- Results also show each boat’s accumulated first/second/third/fourth-place counts, saved in this browser. Reset history clears those counts.
-- The race ends after third place finishes. Results assign the remaining boat fourth and mark it unfinished.
+- Results also show each boat’s accumulated first-through-sixth-place counts, saved in this browser. Reset history clears those counts.
+- The race ends after fifth place finishes. Results assign the remaining boat sixth and mark it unfinished.
 
 ## Local preview
 

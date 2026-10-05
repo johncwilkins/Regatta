@@ -1,16 +1,24 @@
 import {advanceBoat,MIN_SPEED,noGoHalfAngle,relativeWind} from './physics.js';
 import {reachesMark,hasRoundedWaypoint,nextMark,roundingWaypoint,markExitPath,exitWaypoint,avoidMarks} from './course.js';
 const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
-export function createRacer(skill){return {skill,x:skill==='weekend'?-3:5,z:skill==='expert'?-4.5:skill==='weekend'?8:4.5,heading:0,speed:MIN_SPEED,sheet:40,tack:skill==='expert'?-1:1,target:0,rounded:0,angle:0,heel:0,shadow:0,roundPhase:0,roundSide:0,exitPath:[],clock:0,recoverUntil:0,stalled:0,lastContact:-100,progressAt:0,bestDistance:Infinity}}
+export const RACER_PROFILES=[
+ {skill:'expert',name:'Ace',color:0x155fc8,hex:'#72aaff',badge:1},
+ {skill:'weekend',name:'Weekend Warrior',color:0xf4c72d,hex:'#f4c72d',badge:2},
+ {skill:'spider',name:'Spider',color:0x35b759,hex:'#65de89',badge:3},
+ {skill:'marquee',name:'Marquee',color:0x16191d,hex:'#c2c8ce',badge:4},
+ {skill:'scope',name:'Scope',color:0xf3f2e9,hex:'#f3f2e9',badge:5}
+];
+export const SAILOR_SKILLS={expert:{point:3,turn:2.3,error:0,wobble:0,response:9},marquee:{point:3,turn:2.3,error:0,wobble:0,response:9},scope:{point:4,turn:2.1,error:2,wobble:.02,response:5},spider:{point:5,turn:1.95,error:3,wobble:.04,response:3.5},weekend:{point:6,turn:1.8,error:6,wobble:.065,response:2},novice:{point:10,turn:1.3,error:20,wobble:.19,response:.65}};
+let nextRacerId=0;
+export function createRacer(skill){const profile=RACER_PROFILES.find(r=>r.skill===skill);return {skill,racerId:++nextRacerId,...profile,x:skill==='weekend'?-3:5,z:skill==='expert'?-4.5:skill==='weekend'?8:4.5,heading:0,speed:MIN_SPEED,sheet:40,tack:skill==='expert'?-1:1,target:0,rounded:0,angle:0,heel:0,shadow:0,roundPhase:0,roundSide:0,exitPath:[],clock:0,recoverUntil:0,stalled:0,lastContact:-100,progressAt:0,bestDistance:Infinity}}
 export function bestSheet(speed,direction,wind,shadow=0,gust=0){let best=5,force=-1;for(let s=5;s<=90;s++){const f=advanceBoat(speed,direction,wind,s,0,shadow,gust).force;if(f>force){best=s;force=f}}return best}
 export function stepRacer(r,course,wind,knots,time,dt,traffic=[],navigation={}){
- if(dt<=0)return;r.clock=time;
+ if(dt<=0)return;r.clock=time;const ability=SAILOR_SKILLS[r.skill]||SAILOR_SKILLS.weekend;
  const target=course[r.target],next=course[nextMark(r.target,course.length)],waypoint=navigation.waypoint||exitWaypoint(r)||roundingWaypoint(target,next,r),bearing=Math.atan2(waypoint.z-r.z,waypoint.x-r.x),windRad=wind*Math.PI/180;
- const closeAngle=Math.min(78,noGoHalfAngle(knots,r.speed,navigation.gust)+(r.skill==='expert'?3:r.skill==='weekend'?6:10))*Math.PI/180;
+ const closeAngle=Math.min(78,noGoHalfAngle(knots,r.speed,navigation.gust)+ability.point)*Math.PI/180;
  const relative=wrap(bearing-windRad);let desired=bearing;
- if(Math.abs(relative)<closeAngle){desired=windRad+r.tack*closeAngle}else if(Math.abs(relative)<Math.PI/2){r.tack=Math.sign(relative)||r.tack}
- if(r.skill==='weekend')desired+=Math.sin(time*.42)*.065;
- if(r.skill==='novice')desired+=(Math.sin(time*.65)*.19+Math.sin(time*1.7)*.08);
+ if(Math.abs(relative)<closeAngle){if(relative*r.tack<-.2)r.tack=Math.sign(relative);desired=windRad+r.tack*closeAngle}else if(Math.abs(relative)<Math.PI/2){r.tack=Math.sign(relative)||r.tack}
+ desired+=Math.sin(time*.42)*ability.wobble;if(r.skill==='novice')desired+=Math.sin(time*1.7)*.08;
  const distance=Math.hypot(waypoint.x-r.x,waypoint.z-r.z);
  const waypointKey=`${waypoint.x.toFixed(1)},${waypoint.z.toFixed(1)}`;if(r.waypointKey!==waypointKey){r.waypointKey=waypointKey;r.bestDistance=Infinity;r.progressAt=time}
  if(distance<r.bestDistance-.5){r.bestDistance=distance;r.progressAt=time}
@@ -19,10 +27,10 @@ export function stepRacer(r,course,wind,knots,time,dt,traffic=[],navigation={}){
  const recovering=time<r.recoverUntil;if(recovering){desired=recoveryHeading(r,navigation.obstacles||course,traffic,wind);avoidance.brake=0}
  const windError=wrap(desired-windRad);if(Math.abs(windError)<closeAngle)desired=windRad+(Math.sign(windError)||r.tack)*closeAngle;
 
- const error=wrap(desired-r.heading),rate=r.skill==='expert'?2.3:r.skill==='weekend'?1.8:1.3;r.heading+=Math.max(-rate*dt,Math.min(rate*dt,error));
+ const error=wrap(desired-r.heading),rate=ability.turn;r.heading+=Math.max(-rate*dt,Math.min(rate*dt,error));
  const rel=relativeWind(wind,r.heading),optimal=bestSheet(r.speed,rel,knots,r.shadow,navigation.gust);
- const wanted=recovering||distance<15||r.skill==='expert'?optimal:r.skill==='weekend'?Math.max(5,Math.min(90,optimal+4+6*Math.sin(time*.27))):Math.max(5,Math.min(90,optimal+12+20*Math.sin(time*.38)));
- r.sheet+=(wanted-r.sheet)*(1-Math.exp(-dt*(r.skill==='expert'?9:r.skill==='weekend'?2:.65)));
+ const wanted=recovering||distance<15||ability.error===0?optimal:Math.max(5,Math.min(90,optimal+ability.error*.65+ability.error*Math.sin(time*.27)));
+ r.sheet+=(wanted-r.sheet)*(1-Math.exp(-dt*ability.response));
  const from={x:r.x,z:r.z},m=advanceBoat(r.speed,rel,knots,r.sheet,dt,r.shadow,navigation.gust);r.speed=Math.max(MIN_SPEED,m.speed*Math.exp(-avoidance.brake*dt));const advance=(r.speed+m.speed)*.5*dt;r.x+=advance*Math.cos(r.heading);r.z+=advance*Math.sin(r.heading);r.motion=m;
  r.angle+=(m.sail.sail-r.angle)*(1-Math.exp(-dt*4));r.heel+=(m.sail.heel-r.heel)*(1-Math.exp(-dt*1.5));
  if(navigation.score!==false&&!r.exitPath.length&&hasRoundedWaypoint(target,next,r)&&reachesMark(target,from,r,next)){r.exitPath=markExitPath(target,next,r);r.target=nextMark(r.target,course.length);r.rounded++;r.roundPhase=0;r.roundSide=0;r.bestDistance=Infinity;r.progressAt=time}
@@ -51,7 +59,7 @@ export function bumpMark(b,mark){const p=closest(mark,...spine(b)),n=normal(p,ma
 export function avoidTraffic(boat,desired,traffic,wind){
  let heading=desired,brake=0,bestRisk=0;
  const center=b=>({x:b.x-1.5*Math.cos(b.heading),z:b.z-1.5*Math.sin(b.heading)}),a=center(boat);
- for(const other of traffic){if(other===boat||other.skill===boat.skill&&other.isAI)continue;
+ for(const other of traffic){if(other===boat||boat.racerId!==undefined&&other.racerId===boat.racerId)continue;
   const b=center(other),dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);if(d>30)continue;
   const vx=other.speed*Math.cos(other.heading)-boat.speed*Math.cos(desired),vz=other.speed*Math.sin(other.heading)-boat.speed*Math.sin(desired),v2=vx*vx+vz*vz;
   const t=Math.max(0,Math.min(6,-(dx*vx+dz*vz)/(v2||1))),closest=Math.hypot(dx+vx*t,dz+vz*t);
@@ -68,7 +76,7 @@ export function avoidTraffic(boat,desired,traffic,wind){
 
 export function recoveryHeading(boat,course,traffic,wind){
  let x=0,z=0;const center={x:boat.x-1.5*Math.cos(boat.heading),z:boat.z-1.5*Math.sin(boat.heading)};
- for(const p of [...course,...traffic.filter(o=>o.skill!==boat.skill)]){const px=p.heading===undefined?p.x:p.x-1.5*Math.cos(p.heading),pz=p.heading===undefined?p.z:p.z-1.5*Math.sin(p.heading),dx=center.x-px,dz=center.z-pz,d=Math.hypot(dx,dz);if(d<12){x+=dx/(d*d+.5);z+=dz/(d*d+.5)}}
+ for(const p of [...course,...traffic.filter(o=>o!==boat&&(boat.racerId===undefined||o.racerId!==boat.racerId))]){const px=p.heading===undefined?p.x:p.x-1.5*Math.cos(p.heading),pz=p.heading===undefined?p.z:p.z-1.5*Math.sin(p.heading),dx=center.x-px,dz=center.z-pz,d=Math.hypot(dx,dz);if(d<12){x+=dx/(d*d+.5);z+=dz/(d*d+.5)}}
  const angle=Math.hypot(x,z)>.01?Math.atan2(z,x):boat.heading+(boat.skill==='expert'?-1:1)*Math.PI/3,wr=wind*Math.PI/180,rel=wrap(angle-wr);
  return Math.abs(rel)<.85?wr+(Math.sign(rel)||boat.tack)*.85:angle;
 }

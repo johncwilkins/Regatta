@@ -1,5 +1,14 @@
 export const MARK_RADIUS=12;
-export function makeCourse(windDegrees,type='starboard',random=Math.random){const varied=type==='random';if(varied)type=['starboard','port','updown'][Math.floor(random()*3)];const r=windDegrees*Math.PI/180,c=Math.cos(r),s=Math.sin(r),scale=varied?.8+random()*.45:1,width=(varied?.8+random()*.45:1)*70*(type==='port'?-1:1);const course=[{x:90*scale*c,z:90*scale*s,color:'#ff7b22',name:'Orange · Upwind'}];if(type!=='updown')course.push({x:20*scale*c-width*s,z:20*scale*s+width*c,color:'#9d294b',name:'Maroon · Offset mark'});course.push({x:-50*scale*c,z:-50*scale*s,color:'#ffdb32',name:'Yellow · Downwind'});course.layout=type;const area=course.reduce((sum,p,i)=>{const q=course[(i+1)%course.length];return sum+p.x*q.z-p.z*q.x},0),side=Math.sign(area)||1;
+export const COURSE_TYPES=['starboard','port','updown','long-starboard','long-port','long-updown'];
+export function makeCourse(windDegrees,type='starboard'){
+ if(!COURSE_TYPES.includes(type))type='starboard';
+ const long=type.startsWith('long-'),base=type.replace('long-',''),r=windDegrees*Math.PI/180,c=Math.cos(r),s=Math.sin(r),scale=long?2:1;
+ // Offset legs are symmetric about downwind: 45 degrees normally, 20 on long triangles.
+ const width=70*scale*(long?Math.tan(20*Math.PI/180):1)*(base==='port'?-1:1);
+ const course=[{x:90*scale*c,z:90*scale*s,color:'#ff7b22',name:'Orange · Upwind'}];
+ if(base!=='updown')course.push({x:20*scale*c-width*s,z:20*scale*s+width*c,color:'#9d294b',name:'Maroon · Offset mark'});
+ course.push({x:-50*scale*c,z:-50*scale*s,color:'#ffdb32',name:'Yellow · Downwind'});course.layout=type;
+ const area=course.reduce((sum,p,i)=>{const q=course[(i+1)%course.length];return sum+p.x*q.z-p.z*q.x},0),side=Math.sign(area)||1;
  for(const [i,mark]of course.entries()){const prev=course[(i+course.length-1)%course.length],next=course[(i+1)%course.length],ix=mark.x-prev.x,iz=mark.z-prev.z,ox=next.x-mark.x,oz=next.z-mark.z,il=Math.hypot(ix,iz),ol=Math.hypot(ox,oz);mark.entryNormal={x:side*iz/il,z:-side*ix/il};mark.exitNormal={x:side*oz/ol,z:-side*ox/ol};const x=mark.entryNormal.x+mark.exitNormal.x,z=mark.entryNormal.z+mark.exitNormal.z,d=Math.hypot(x,z);mark.outsideNormal=d>1e-8?{x:x/d,z:z/d}:{x:ix/il,z:iz/il};}return course;}
 export function nextMark(index,count){return (index+1)%count}
 

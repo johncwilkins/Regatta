@@ -25,7 +25,29 @@ export function createPuffVisuals(scene){
  return patches=>patches.forEach((p,i)=>{const mesh=puffs[i];mesh.position.set(p.x,.09,p.z);mesh.scale.set(p.radiusX,1,p.radiusZ);mesh.rotation.y=-p.angle;mesh.material.opacity=.21+.16*p.power});
 }
 
-export function addCommitteeBoat(scene){const root=new THREE.Group();root.name='Committee boat';const hull=new THREE.Mesh(new THREE.BoxGeometry(6,.9,2.2),new THREE.MeshStandardMaterial({color:0xf2eee0,roughness:.6}));hull.position.y=.35;root.add(hull);const stripe=new THREE.Mesh(new THREE.BoxGeometry(6,.16,2.24),new THREE.MeshStandardMaterial({color:0x173f71}));stripe.position.y=.6;root.add(stripe);const cabin=new THREE.Mesh(new THREE.BoxGeometry(2.5,1.8,1.7),new THREE.MeshStandardMaterial({color:0xfafafa}));cabin.position.set(-.6,1.5,0);root.add(cabin);const glass=new THREE.Mesh(new THREE.BoxGeometry(2.55,.6,1.75),new THREE.MeshStandardMaterial({color:0x466b80}));glass.position.set(-.6,1.9,0);root.add(glass);const pole=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,4,8),new THREE.MeshStandardMaterial({color:0xeeeeee}));pole.position.set(1.6,2.4,0);root.add(pole);const flag=new THREE.Mesh(new THREE.PlaneGeometry(1.4,.8),new THREE.MeshBasicMaterial({color:0xf3df37,side:THREE.DoubleSide}));flag.position.set(2.3,4,0);root.add(flag);scene.add(root);return root}
+export function addCommitteeBoat(scene){
+ const root=new THREE.Group();root.name='Committee boat';
+ const navy=new THREE.MeshStandardMaterial({color:0x173f62,roughness:.4}),cream=new THREE.MeshStandardMaterial({color:0xf2eee0,roughness:.6}),glass=new THREE.MeshStandardMaterial({color:0x33576b,roughness:.2,metalness:.25}),teak=new THREE.MeshStandardMaterial({color:0x9a643b,roughness:.8});
+ const box=(name,w,h,d,x,y,z,material)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.name=name;mesh.position.set(x,y,z);root.add(mesh);return mesh};
+ // Flared Downeast hull: broad transom, fine raised bow, and a lower V-shaped bottom.
+ const stations=[[-3.5,1.12,.65,-.45],[-2.4,1.3,.68,-.55],[0,1.28,.72,-.55],[1.8,.95,.85,-.34],[2.9,.45,1.02,.05],[3.45,.025,1.12,.5]],vertices=[],indices=[];
+ for(const [x,w,top,bottom]of stations)vertices.push(x,top,w,x,bottom,w*.56,x,bottom,-w*.56,x,top,-w);
+ for(let i=0;i<stations.length-1;i++)for(let j=0;j<4;j++){const a=i*4+j,b=i*4+(j+1)%4,c=(i+1)*4+(j+1)%4,d=(i+1)*4+j;indices.push(a,b,d,b,c,d)}
+ indices.push(0,3,1,1,3,2,20,21,23,21,22,23);
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setIndex(indices);geometry.computeVertexNormals();const hull=new THREE.Mesh(geometry,navy);hull.name='Downeast flared hull';root.add(hull);
+ // Cream deck follows the sheer instead of a rectangular barge outline.
+ const deck=new THREE.Shape();stations.forEach(([x,w],i)=>i?deck.lineTo(x,w):deck.moveTo(x,w));for(const [x,w]of [...stations].reverse())deck.lineTo(x,-w);deck.closePath();const deckGeo=new THREE.ShapeGeometry(deck);deckGeo.rotateX(Math.PI/2);const dp=deckGeo.attributes.position;for(let i=0;i<dp.count;i++){const x=dp.getX(i);let y=.65;for(let j=0;j<stations.length-1;j++)if(x>=stations[j][0]&&x<=stations[j+1][0]){const t=(x-stations[j][0])/(stations[j+1][0]-stations[j][0]);y=stations[j][2]+t*(stations[j+1][2]-stations[j][2])}dp.setY(i,y+.015)}deckGeo.computeVertexNormals();const deckMesh=new THREE.Mesh(deckGeo,new THREE.MeshStandardMaterial({color:0xf2eee0,side:THREE.DoubleSide}));deckMesh.name='Raised sheer deck';root.add(deckMesh);
+ box('Teak aft cockpit',2.35,.06,1.8,-2.1,.73,0,teak);
+ box('Wheelhouse',2.4,1.25,1.95,.35,1.4,0,cream);
+ for(const side of [-1,1]){box('Side window',1.7,.63,.035,.35,1.66,side*.99,glass);box('Cockpit coaming',2.6,.35,.1,-2,.85,side*1.12,cream)}
+ const windshield=box('Raked windscreen',.055,.68,1.7,1.58,1.68,0,glass);windshield.rotation.z=.13;
+ box('Wheelhouse roof',3.25,.17,2.25,.15,2.09,0,cream);box('Aft canopy',1.8,.12,2.1,-2.15,2.06,0,cream);
+ for(const z of [-.94,.94])box('Canopy support',.07,1.2,.07,-2.95,1.4,z,cream);
+ box('Bow rail',1.05,.08,.06,2.4,1.23,0,cream);
+ const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,2.9,8),cream);pole.position.set(-.3,3.5,0);root.add(pole);
+ const flag=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.65),new THREE.MeshBasicMaterial({color:0xf3df37,side:THREE.DoubleSide}));flag.position.set(.3,4.6,0);root.add(flag);
+ scene.add(root);return root;
+}
 
 export function addCoastalLandmarks(scene){
  const timber=new THREE.MeshStandardMaterial({color:0x996547,roughness:.85}),white=new THREE.MeshStandardMaterial({color:0xefe7d7,roughness:.6}),steel=new THREE.MeshStandardMaterial({color:0x52778a,metalness:.25,roughness:.5});

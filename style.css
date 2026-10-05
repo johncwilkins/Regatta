@@ -76,3 +76,5 @@ aside{gap:22px}aside header h2{font-size:26px}.instrument .status{margin-bottom:
 .help-link{position:absolute;top:14px;right:108px;z-index:6;padding:8px 12px;border:1px solid #29495c;border-radius:6px;background:#142c3c;color:#dcecf5;font-size:14px;text-decoration:none;line-height:1.2}.help-link:hover{background:#214657}.help-link:focus-visible{outline:2px solid #55dbe4;outline-offset:4px}@media(min-width:741px){.help-link{right:28px;top:70px}}@media(max-height:650px) and (min-width:741px){.help-link{top:14px;right:18px}}
 
 @media(max-width:740px){#scene>.brand .mark,#scene>.brand p{display:none}#scene>.brand h1{font-size:16px;letter-spacing:2px}#scene>.brand{top:24px}}
+
+.fleet-score #marqueeScore{color:#c2c8ce}.fleet-score #scopeScore{color:#f3f2e9}.history-table tbody tr:nth-child(5) th{color:#c2c8ce}.history-table tbody tr:nth-child(6) th{color:#f3f2e9}.history-table{font-size:14px}.history-table th,.history-table td{padding:8px 5px}@media(max-width:480px){.history-table{font-size:12px}.history-table th,.history-table td{padding:7px 3px}.history-table th:first-child{max-width:96px}}
