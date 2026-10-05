@@ -1,5 +1,5 @@
-import {advanceBoat,apparentWind,MIN_SPEED,noGoHalfAngle,relativeWind} from './physics.js';
-import {reachesMark,hasRoundedWaypoint,nextMark,roundingWaypoint,markExitPath,exitWaypoint,avoidMarks} from './course.js';
+import {advanceBoat,apparentWind,MIN_SPEED,noGoHalfAngle,relativeWind} from '../../physics.js';
+import {reachesMark,hasRoundedWaypoint,nextMark,roundingWaypoint,markExitPath,exitWaypoint,avoidMarks} from '../../course.js';
 const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
 export const RACER_PROFILES=[
  {skill:'expert',name:'Ace',color:0x155fc8,hex:'#72aaff',badge:1},
@@ -9,7 +9,6 @@ export const RACER_PROFILES=[
  {skill:'scope',name:'Scope',color:0xf3f2e9,hex:'#f3f2e9',badge:5}
 ];
 export const SAILOR_SKILLS={expert:{point:3,turn:2.3,error:0,wobble:0,response:9},marquee:{point:3,turn:2.3,error:0,wobble:0,response:9},scope:{point:4,turn:2.1,error:2,wobble:.02,response:5},spider:{point:5,turn:1.95,error:3,wobble:.04,response:3.5},weekend:{point:6,turn:1.8,error:6,wobble:.065,response:2},novice:{point:10,turn:1.3,error:20,wobble:.19,response:.65}};
-export const AI_NAVIGATION={"lookAhead":9,"clearance":7,"yieldClearance":9,"riskWeight":70,"turnBias":0.18,"markClearance":6};
 let nextRacerId=0;
 export function createRacer(skill){const profile=RACER_PROFILES.find(r=>r.skill===skill);return {skill,racerId:++nextRacerId,...profile,x:skill==='weekend'?-3:5,z:skill==='expert'?-4.5:skill==='weekend'?8:4.5,heading:0,speed:MIN_SPEED,sheet:40,tack:skill==='expert'?-1:1,target:0,rounded:0,angle:0,heel:0,shadow:0,roundPhase:0,roundSide:0,exitPath:[],clock:0,recoverUntil:0,stalled:0,lastContact:-100,progressAt:0,bestDistance:Infinity}}
 export function bestSheet(speed,direction,wind,shadow=0,gust=0){
@@ -30,11 +29,10 @@ export function stepRacer(r,course,wind,knots,time,dt,traffic=[],navigation={}){
  const distance=Math.hypot(waypoint.x-r.x,waypoint.z-r.z);
  const waypointKey=`${waypoint.x.toFixed(1)},${waypoint.z.toFixed(1)}`;if(r.waypointKey!==waypointKey){r.waypointKey=waypointKey;r.bestDistance=Infinity;r.progressAt=time}
  if(distance<r.bestDistance-.5){r.bestDistance=distance;r.progressAt=time}
- if(time-r.progressAt>7){r.recoverUntil=time+3;r.tack*=-1;r.progressAt=time;r.bestDistance=Infinity;r.recoveryCount=(r.recoveryCount||0)+1;}
- const recovering=time<r.recoverUntil;
- if(recovering)desired=recoveryHeading(r,navigation.obstacles||course,traffic,wind);
- const avoidance=avoidTraffic(r,desired,traffic,wind,navigation.obstacles||course,closeAngle,distance);
- desired=avoidance.heading;
+ if(time-r.progressAt>7){r.recoverUntil=time+3;r.tack*=-1;r.progressAt=time;r.bestDistance=Infinity;r.recoveryCount=(r.recoveryCount||0)+1;if(r.recoveryCount%2===0){if(!r.exitPath.length){r.roundPhase=0;r.roundSide=1}}}
+ const avoidance=avoidTraffic(r,desired,traffic,wind);desired=avoidMarks(r,avoidance.heading,navigation.obstacles||course);
+ const recovering=time<r.recoverUntil;if(recovering){desired=recoveryHeading(r,navigation.obstacles||course,traffic,wind);avoidance.brake=0}
+ const windError=wrap(desired-windRad);if(Math.abs(windError)<closeAngle)desired=windRad+(Math.sign(windError)||r.tack)*closeAngle;
 
  const error=wrap(desired-r.heading),rate=ability.turn;r.heading+=Math.max(-rate*dt,Math.min(rate*dt,error));
  const rel=relativeWind(wind,r.heading),optimal=bestSheet(r.speed,rel,knots,r.shadow,navigation.gust);
@@ -64,37 +62,23 @@ export function windShadow(receiver,others,wind){const rad=wind*Math.PI/180,flow
 
 export function bumpMark(b,mark){const p=closest(mark,...spine(b)),n=normal(p,mark,{x:-Math.cos(b.heading),z:-Math.sin(b.heading)});const radius=mark.radius||1.8;if(n.d>=radius)return false;b.x+=n.x*(radius-n.d+.01);b.z+=n.z*(radius-n.d+.01);if(!b.skill||b.clock-b.lastContact>.9){b.speed=Math.max(MIN_SPEED,b.speed*.4);b.lastContact=b.clock}if(b.skill&&b.clock>=b.recoverUntil)b.recoverUntil=b.clock+3;return true}
 
-// Evaluate several sailable escape headings together, so one avoidance does not steer into another boat.
-export function avoidTraffic(boat,desired,traffic,wind,marks=[],closeAngle=null,waypointDistance=Infinity){
- const config=AI_NAVIGATION,ability=SAILOR_SKILLS[boat.skill]||SAILOR_SKILLS.weekend,windRad=wind*Math.PI/180;
- closeAngle??=(35+ability.point)*Math.PI/180;
- const sailHeading=h=>{const rel=wrap(h-windRad);return Math.abs(rel)<closeAngle?windRad+(Math.sign(rel)||boat.tack||1)*closeAngle:h};
- desired=sailHeading(desired);
- const center=b=>({x:b.x-1.5*Math.cos(b.heading),z:b.z-1.5*Math.sin(b.heading)}),origin=center(boat);
- const nearby=traffic.filter(o=>o!==boat&&(boat.racerId===undefined||o.racerId!==boat.racerId)&&Math.hypot(o.x-boat.x,o.z-boat.z)<45);
- const obstacles=marks.filter(m=>Math.hypot(m.x-boat.x,m.z-boat.z)<24);
- if(!nearby.length&&!obstacles.length)return {heading:desired,brake:0};
- const candidates=[0,.25,-.25,.5,-.5,.85,-.85,1.2,-1.2,1.65,-1.65].map(delta=>sailHeading(desired+delta));candidates.push(windRad-closeAngle,windRad+closeAngle);
- let best={heading:desired,cost:Infinity,risk:0,immediate:Infinity};
- for(const heading of candidates){
-  const vx=Math.cos(heading)*boat.speed,vz=Math.sin(heading)*boat.speed;
-  let cost=Math.abs(wrap(heading-desired))+config.turnBias*Math.abs(wrap(heading-boat.heading)),risk=0,immediate=Infinity;
-  for(const other of nearby){
-   const p=center(other),dx=p.x-origin.x,dz=p.z-origin.z,rvx=other.speed*Math.cos(other.heading)-vx,rvz=other.speed*Math.sin(other.heading)-vz,v2=rvx*rvx+rvz*rvz;
-   const t=Math.max(0,Math.min(config.lookAhead,-(dx*rvx+dz*rvz)/(v2||1))),closest=Math.hypot(dx+rvx*t,dz+rvz*t);
-   const yieldBoat=collisionFault(boat,other,wind).offender===boat,clearance=yieldBoat?config.yieldClearance:config.clearance;
-   const danger=Math.max(0,1-closest/clearance)**2*(1-t/(config.lookAhead+2));
-   cost+=danger*config.riskWeight*(yieldBoat?1.8:1);risk=Math.max(risk,danger);if(closest<3&&t<1.5)immediate=Math.min(immediate,Math.hypot(dx,dz));
-  }
-  for(const mark of obstacles){
-   const dx=mark.x-origin.x,dz=mark.z-origin.z,v2=vx*vx+vz*vz,horizon=Math.min(4,Math.max(.6,waypointDistance/Math.max(.5,boat.speed)));
-   const t=Math.max(0,Math.min(horizon,(dx*vx+dz*vz)/(v2||1))),closest=Math.hypot(dx-vx*t,dz-vz*t),clearance=Math.max(config.markClearance,(mark.radius||1.8)+2.2);
-   const danger=Math.max(0,1-closest/clearance)**2;cost+=danger*config.riskWeight*3;risk=Math.max(risk,danger);if(closest<clearance*.7&&t<1.2)immediate=Math.min(immediate,Math.hypot(dx,dz));
-  }
-  if(cost<best.cost)best={heading,cost,risk,immediate};
+// Predict closest approach using hull centers, then steer clear before overlap.
+export function avoidTraffic(boat,desired,traffic,wind){
+ let heading=desired,brake=0,bestRisk=0;
+ const center=b=>({x:b.x-1.5*Math.cos(b.heading),z:b.z-1.5*Math.sin(b.heading)}),a=center(boat);
+ for(const other of traffic){if(other===boat||boat.racerId!==undefined&&other.racerId===boat.racerId)continue;
+  const b=center(other),dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);if(d>30)continue;
+  const vx=other.speed*Math.cos(other.heading)-boat.speed*Math.cos(desired),vz=other.speed*Math.sin(other.heading)-boat.speed*Math.sin(desired),v2=vx*vx+vz*vz;
+  const t=Math.max(0,Math.min(6,-(dx*vx+dz*vz)/(v2||1))),closest=Math.hypot(dx+vx*t,dz+vz*t);
+  const portGiveWay=Math.sin(relativeWind(wind,boat.heading)*Math.PI/180)<0&&Math.sin(relativeWind(wind,other.heading)*Math.PI/180)>0;
+  if(closest>(portGiveWay?7:4.2)&&d>(portGiveWay?9:4.5))continue;
+  const bearing=Math.atan2(dz,dx),relative=wrap(bearing-boat.heading);if(Math.abs(relative)>2.2&&d>4.5)continue;
+  const yieldBoat=collisionFault(boat,other,wind).offender===boat,risk=(1-Math.min(1,closest/(portGiveWay?8:5)))*(1-t/8)+(d<4.5?.5:0);if(risk<=bestRisk)continue;bestRisk=risk;
+  const headOn=Math.cos(boat.heading-other.heading)<-.65,side=headOn||Math.abs(relative)<.08?1:-Math.sign(relative);
+  heading=portGiveWay?Math.atan2(b.z-8*Math.sin(other.heading)-a.z,b.x-8*Math.cos(other.heading)-a.x):desired+side*(yieldBoat?1.25:.4)*Math.min(1,Math.max(.4,risk));
+  brake=yieldBoat&&d<18?Math.min(2.2,(18-d)*.2):d<3?1:0;
  }
- const brake=best.immediate<5&&best.risk>.12?Math.min(1.1,(5-best.immediate)*.3):0;
- return {heading:best.heading,brake};
+ return {heading,brake};
 }
 
 export function recoveryHeading(boat,course,traffic,wind){

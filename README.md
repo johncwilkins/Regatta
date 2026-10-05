@@ -44,3 +44,7 @@ Then open http://localhost:8000.
 `index.html`, `style.css`, and `app.js` are the interface and scene. Other top-level modules contain sailing physics, AI, course/race scoring, wind, scenery, and the map. `assets/Laser.glb` is the boat model. `vendor` and `utils` contain the local Three.js runtime and loader dependencies. `THIRD-PARTY-LICENSES.txt` includes the Three.js MIT licence.
 
 The package is a standalone website export. It does not include the ChatGPT hosting configuration or source repository credentials. No custom domain is set in this package; configure one in GitHub Pages when you choose it.
+
+## AI diagnostics
+
+`AI-TESTING.md` explains how to run repeatable headless races, replay failures, and tune navigation. The included Node scripts need no npm dependencies.
