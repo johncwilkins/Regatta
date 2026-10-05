@@ -57,3 +57,22 @@ aside{gap:22px}aside header h2{font-size:26px}.instrument .status{margin-bottom:
 #tillerPad{--tiller-wood:repeating-linear-gradient(3deg,transparent 0 7px,#2f1b1433 8px 9px,transparent 10px 17px),repeating-linear-gradient(177deg,#c48b4722 0 2px,transparent 3px 11px),radial-gradient(ellipse at 73% 52%,#301b1722 0 3%,transparent 4% 7%,#29191522 8% 9%,transparent 10% 18%),linear-gradient(90deg,#4b2c1b,#75502e 32%,#52301c 67%,#674123);background:var(--tiller-wood);border:2px solid #a77743;color:#fff4df;box-shadow:inset 0 2px 2px #e4b77366,inset 0 -3px 4px #24170bcc,0 4px 10px #0005;text-shadow:0 1px 2px #21150d}#tillerPad span{color:#f3ddba}#tillerPad.active{background:var(--tiller-wood);border-color:#ffd182;box-shadow:inset 0 2px 2px #edc18d88,inset 0 -3px 4px #24170bcc,0 0 12px #f1b55366}
 
 .history-section{margin:24px 0 18px;padding-top:18px;border-top:1px solid #365767}.history-section h3{font-size:20px;margin:0 0 8px}.history-table th:not(:first-child),.history-table td{text-align:center;font-variant-numeric:tabular-nums}.history-table tbody tr:first-child{background:transparent}.history-table tbody tr:nth-child(1) th{color:#ff7e87}.history-table tbody tr:nth-child(2) th{color:#72aaff}.history-table tbody tr:nth-child(3) th{color:#f4c72d}.history-table tbody tr:nth-child(4) th{color:#65de89}.results-card #resetHistory{background:#142c3c;color:#dcecf5;font-size:14px;padding:10px}.history-section #historySummary{margin-bottom:10px}
+
+/* Touch-only trim pad; desktop controls keep their existing layout. */
+.mobile-trim{display:none}
+@media(max-width:740px),(pointer:coarse){
+ #scene>.course-map{display:none}
+ .mobile-trim{position:absolute;display:grid;grid-template-rows:1fr 20px 1fr;left:max(12px,env(safe-area-inset-left));bottom:150px;width:94px;height:152px;z-index:7;background:#092132e8;border:1px solid #6a9caf;border-radius:16px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+ .mobile-trim button{border:0;border-radius:0;background:transparent;font-size:16px;font-weight:700;padding:10px 6px;touch-action:none}
+ .mobile-trim button.active{background:#216576;color:#fff;border:2px solid #5ae1e8}
+ .thumb-divider{font-size:10px;letter-spacing:.5px;text-align:center;line-height:20px;color:#adced9;border-top:1px solid #34576a;border-bottom:1px solid #34576a;pointer-events:none}
+ #tillerPad{font-size:0;min-height:64px;padding:12px 10px}
+ #tillerPad::before{content:'TILLER · Hold and slide left / right';font-size:14px}
+ #tillerPad span{display:none}
+ #scene>.tiller{bottom:96px}#scene>.run-state{bottom:116px}
+}
+@media(max-height:500px) and (pointer:coarse){.mobile-trim{bottom:105px;height:120px;width:90px}#scene>.run-state{bottom:90px}#scene>.tiller{bottom:78px}#tillerPad{min-height:54px}}
+
+.help-link{position:absolute;top:14px;right:108px;z-index:6;padding:8px 12px;border:1px solid #29495c;border-radius:6px;background:#142c3c;color:#dcecf5;font-size:14px;text-decoration:none;line-height:1.2}.help-link:hover{background:#214657}.help-link:focus-visible{outline:2px solid #55dbe4;outline-offset:4px}@media(min-width:741px){.help-link{right:28px;top:70px}}@media(max-height:650px) and (min-width:741px){.help-link{top:14px;right:18px}}
+
+@media(max-width:740px){#scene>.brand .mark,#scene>.brand p{display:none}#scene>.brand h1{font-size:16px;letter-spacing:2px}#scene>.brand{top:24px}}

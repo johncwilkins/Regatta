@@ -17,6 +17,8 @@ GitHub’s official instructions: https://docs.github.com/en/pages/getting-start
 
 ## Play
 
+Open **How to sail** in the game for a quick desktop/mobile guide, or visit `help.html`.
+
 - Hover over the wooden tiller to sail; move off it to pause.
 - Mouse left turns right; mouse right turns left; centre holds straight.
 - Hold the left mouse button to trim in, or the right button to ease out. A/D also trim.
