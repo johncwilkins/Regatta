@@ -12,7 +12,7 @@ export function addYachtClub(scene){
  for(let x=-12;x<=12;x+=4){box(2.2,2.4,.18,x,8, -5.6,glass);box(2.5,.16,.25,x,9.3,-5.8,trim);box(.12,2.4,.25,x,8,-5.8,trim)}
  box(4,.7,31,12,.9,-26,wood);for(let z=-38;z<-11;z+=6)box(.4,2,.4,14,0,z,wood);
  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,17,8),trim);pole.position.set(-21,9,-9);club.add(pole);
- const flag=new THREE.Mesh(new THREE.PlaneGeometry(4,2),new THREE.MeshBasicMaterial({color:0xd94243,side:THREE.DoubleSide}));flag.position.set(-19,16,-9);club.add(flag);
+ const flag=new THREE.Mesh(new THREE.PlaneGeometry(4,2,16,4),new THREE.MeshBasicMaterial({color:0xd94243,side:THREE.DoubleSide}));flag.position.set(2,0,0);const flagPivot=new THREE.Group();flagPivot.name='Yacht club wind flag';flagPivot.position.set(-21,16,-9);flagPivot.add(flag);club.add(flagPivot);club.userData.windFlag=flagPivot;
  for(let i=0;i<5;i++){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.5,.7,6,6),wood);trunk.position.set(-30+i*14,3,26);club.add(trunk);const tree=new THREE.Mesh(new THREE.ConeGeometry(5,11,7),mat(0x355d3d));tree.position.set(-30+i*14,10,26);club.add(tree)}
  scene.add(club);return club;
 }
@@ -62,3 +62,5 @@ export function addCoastalLandmarks(scene){
  const ferry=addCommitteeBoat(scene);ferry.name='Distant coastal ferry';ferry.position.set(195,0,-125);ferry.scale.set(2.8,1.6,2.2);ferry.rotation.y=.7;
  return time=>{rotor.rotation.z=time*.035;for(const cabin of cabins)cabin.rotation.z=-rotor.rotation.z;ferry.position.y=.12*Math.sin(time*1.2)};
 }
+
+export function updateYachtClubWind(club,time,wind,strength=12){const pivot=club.userData.windFlag;if(!pivot)return;pivot.rotation.y=-(wind*Math.PI/180+Math.PI);const flag=pivot.children[0],p=flag.geometry.attributes.position;for(let i=0;i<p.count;i++){const along=(p.getX(i)+2)/4;p.setZ(i,Math.sin(time*3.8+along*7)*along*.22*Math.min(1,strength/8))}p.needsUpdate=true;flag.geometry.computeBoundingSphere();}
