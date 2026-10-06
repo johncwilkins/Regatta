@@ -146,7 +146,7 @@ export function addArcticHarbor(scene){
    geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));const peak=new THREE.Mesh(geo,mountainMaterial);peak.name='Single-surface snowy mountain';peak.scale.z=d/w;peak.position.set((j-1)*w*.24,height/2,0);peak.rotation.y=j*.35;ridge.add(peak);
   }
  }
- const club=new THREE.Group();club.name='Northern Lights Yacht Club';club.position.set(185,0,-220);group.add(club);
+ const club=new THREE.Group();club.name='Northern Lights Yacht Club';club.position.set(185,0,170);group.add(club);
  const shore=new THREE.Mesh(new THREE.CylinderGeometry(1,1,2,32),rock);shore.scale.set(75,1,36);shore.position.set(0,.2,25);club.add(shore);
  const snowfield=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.5,32),snow);snowfield.scale.set(73,1,34);snowfield.position.set(0,1.5,25);club.add(snowfield);
  box(club,'Timber harbor deck',35,1.1,22,0,1.3,0,timber);
@@ -154,7 +154,9 @@ export function addArcticHarbor(scene){
  const vertices=[-14,2,-1,14,2,-1,0,22,-1,-14,2,18,14,2,18,0,22,18];
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geo.setIndex([0,2,1,3,4,5,0,3,2,2,3,5,2,5,1,1,5,4,0,1,3,1,4,3]);geo.computeVertexNormals();
  const cabin=new THREE.Mesh(geo,timber);cabin.name='A-frame yacht clubhouse';club.add(cabin);
- const length=Math.hypot(14,20);for(const side of [-1,1]){const panel=box(club,'Steep A-frame roof',length,.4,21,side*7,12,8.5,roof);panel.rotation.z=-side*Math.atan2(20,14);const dust=box(club,'Snow on A-frame roof',length,.18,21.2,side*7,12.32,8.5,snow);dust.rotation.z=panel.rotation.z;}
+ // One snowy roof surface, raised clear of the timber prism. No overlapping roof/snow boxes.
+ const roofGeo=new THREE.BufferGeometry();roofGeo.setAttribute('position',new THREE.Float32BufferAttribute([-14.3,2,-2,0,22.3,-2,14.3,2,-2,-14.3,2,19,0,22.3,19,14.3,2,19],3));roofGeo.setIndex([0,3,1,1,3,4,1,4,2,2,4,5]);roofGeo.computeVertexNormals();
+ const snowyRoof=new THREE.Mesh(roofGeo,new THREE.MeshStandardMaterial({color:0xe9f4f7,roughness:.95,side:THREE.DoubleSide}));snowyRoof.name='Single-surface snowy A-frame roof';club.add(snowyRoof);
  const windowGeo=new THREE.BufferGeometry();windowGeo.setAttribute('position',new THREE.Float32BufferAttribute([-9,4,-1.04,9,4,-1.04,0,17,-1.04],3));windowGeo.setIndex([0,1,2]);windowGeo.computeVertexNormals();const window=new THREE.Mesh(windowGeo,new THREE.MeshStandardMaterial({color:0x77b5c7,roughness:.35,side:THREE.DoubleSide}));window.name='Tall triangular harbor window';club.add(window);
  box(club,'A-frame center beam',.4,16,.25,0,11,-1.22,trim);box(club,'Window cross beam',15,.35,.25,0,7,-1.22,trim);box(club,'Entry door',3,4,.3,0,4,-1.4,glass);
  box(club,'Timber dock',3,.6,28,20,1,-15,timber);for(let z=-26;z<0;z+=5)box(club,'Dock piling',.5,3,.5,21.5,.2,z,timber);
