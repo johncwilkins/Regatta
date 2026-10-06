@@ -20,7 +20,7 @@ let courseChoice='starboard';const courseNames={starboard:'Starboard triangle',p
 const navigationLights=[];function updateNavigationLights(){for(const lights of navigationLights)lights.visible=timeOfDay==='night'}
 let timeOfDay='midday';try{const saved=window.localStorage?.getItem('regatta-daylight');if(DAYLIGHT[saved])timeOfDay=saved}catch{}
 const LOCATIONS={islands:{name:'Islands',water:0x087dae},coastal:{name:'Coastal Town',water:0x167f9f},arctic:{name:'Arctic',water:0x286d96}};let locationChoice='islands';try{const saved=window.localStorage?.getItem('regatta-location');if(LOCATIONS[saved])locationChoice=saved}catch{}
-let mooringMode=false,mooringView=null,mooringTime=0,mooringMusic=null,mooringMusicEnabled=true;
+let mooringMode=false,mooringView=null,mooringTime=0,mooringMusic=null,mooringMusicEnabled=false;
 let mooringPreview=null;let raceFinishedAt=null;let finishCelebrated=false;const confetti=document.createElement('div');confetti.className='finish-confetti';confetti.setAttribute('aria-hidden','true');for(let i=0;i<64;i++){const piece=document.createElement('i');piece.style.setProperty?.('--x',`${(i*37)%100}%`);piece.style.setProperty?.('--delay',`${i%9*.06}s`);piece.style.setProperty?.('--drift',`${(i%7-3)*35}px`);piece.style.background=['#ffe16c','#ff8176','#60e1d9','#bba5ff'][i%4];confetti.append(piece)}host.append(confetti);
 let startAudio=null,soundEnabled=true;
 function armStartAudio(event){if(event?.target?.id==='startSound')return;try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;startAudio ||= new Audio();Promise.resolve(startAudio.resume()).then(()=>{$('startSound').textContent=soundEnabled?'Sound on':'Sound off'}).catch(()=>{});}catch{}}
