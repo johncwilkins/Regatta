@@ -39,7 +39,8 @@ export function addMooringParty(root,index){
  const sparksPerBurst=96,fireworks=new THREE.InstancedMesh(new THREE.SphereGeometry(.085,5,4),new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false}),sparksPerBurst*2);
  fireworks.name='Winner mooring fireworks';fireworks.frustumCulled=false;group.add(fireworks);
  const flash=new THREE.PointLight(0xffd277,0,24,2);flash.name='Firework glow';flash.position.set(-1.5,8,0);group.add(flash);
- return {group,people,confetti,fireworks,setWinner(winner){group.visible=winner},update(time,wind,strength){if(!group.visible)return;
+ let jumpAt=null;const splashes=people.map(()=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.45,.025,6,32),new THREE.MeshBasicMaterial({color:0xd8f5ff,transparent:true,opacity:0,depthWrite:false}));ring.name='Crew jump splash';ring.rotation.x=-Math.PI/2;ring.visible=false;group.add(ring);return ring});
+ return {group,people,confetti,fireworks,get jumped(){return jumpAt!==null},jump(time){if(!group.visible||jumpAt!==null)return false;jumpAt=time;return true},reset(){jumpAt=null;confetti.visible=true;people.forEach(({person,mug},i)=>{person.position.set(-1.4-i*.65,.42,i===0?-.48:.48);person.rotation.set(0,0,0);mug.visible=true;splashes[i].visible=false})},setWinner(winner){group.visible=winner},update(time,wind,strength){if(!group.visible)return;
   people.forEach(({person,toast,mug,throwing},i)=>{
    const phase=time*.9+i*2.4,drinking=Math.max(0,Math.sin(phase)),throwAge=(time+i*1.4)%2.8;
    person.rotation.x=.09*Math.sin(time*2+i);person.rotation.z=.06*Math.sin(time*1.7+i);
@@ -48,7 +49,13 @@ export function addMooringParty(root,index){
    // Broad overhead waves, with an upward flick as each handful leaves the crew.
    throwing.rotation.z=-2.0-.95*Math.sin(time*3.5+i)-.45*Math.exp(-throwAge*8);
    throwing.rotation.x=.8*Math.sin(time*2.8+i);
+   if(jumpAt!==null){const t=Math.max(0,time-jumpAt-i*.18),flight=Math.min(1,t/.85),side=i===0?-1:1;
+    person.position.set(-1.4-i*.65+.35*flight,t<.85?.42+2.2*flight-3.15*flight*flight:-.53-root.position.y+.035*Math.sin(time*4+i),side*(.48+2.3*flight));
+    person.rotation.set(.2*Math.sin(flight*Math.PI),0,side*.18*Math.sin(flight*Math.PI));toast.rotation.z=2.6+.5*Math.sin(time*6+i);throwing.rotation.z=-2.6+.5*Math.sin(time*6+i);mug.visible=false;
+    const splashAge=t-.85,ring=splashes[i];ring.visible=splashAge>=0&&splashAge<1.7;ring.position.set(person.position.x,.08-root.position.y,side*2.78);ring.scale.setScalar(.4+Math.max(0,splashAge)*1.7);ring.material.opacity=Math.max(0,.85-splashAge*.5);
+   }
   });
+  confetti.visible=jumpAt===null;
   // Each handful begins in a small spot above a sailor, spreads outward, then falls.
   // Staggered throws and varied velocities avoid a permanent curtain around the boat.
   const relative=wind*Math.PI/180+Math.PI+root.rotation.y,drift=Math.min(.9,strength/20);
