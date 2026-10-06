@@ -31,11 +31,15 @@ export function addMooringParty(root,index){
   mesh(throwing,new THREE.SphereGeometry(.055,8,6),skin[i],0,-.29,0);
   people.push({person,toast,mug,throwing});
  }
- const colors=[0xffcf42,0xf45d74,0x35d8cc,0x739aff,0xf7efff],count=96;
- const confetti=new THREE.InstancedMesh(new THREE.BoxGeometry(.065,.012,.035),mat(0xffffff),count);confetti.name='Winner mooring confetti';confetti.frustumCulled=false;group.add(confetti);
+ const colors=[0xffcf42,0xf45d74,0x35d8cc,0x739aff,0xf7efff],count=384;
+ const confetti=new THREE.InstancedMesh(new THREE.BoxGeometry(.12,.025,.07),new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false}),count);confetti.name='Winner mooring confetti';confetti.frustumCulled=false;group.add(confetti);
  for(let i=0;i<count;i++)confetti.setColorAt(i,new THREE.Color(colors[i%colors.length]));
  const dummy=new THREE.Object3D();
- return {group,people,confetti,setWinner(winner){group.visible=winner},update(time,wind,strength){if(!group.visible)return;
+ // Two staggered rocket bursts, using a fixed pool rather than creating particles per frame.
+ const sparksPerBurst=96,fireworks=new THREE.InstancedMesh(new THREE.SphereGeometry(.085,5,4),new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false}),sparksPerBurst*2);
+ fireworks.name='Winner mooring fireworks';fireworks.frustumCulled=false;group.add(fireworks);
+ const flash=new THREE.PointLight(0xffd277,0,24,2);flash.name='Firework glow';flash.position.set(-1.5,8,0);group.add(flash);
+ return {group,people,confetti,fireworks,setWinner(winner){group.visible=winner},update(time,wind,strength){if(!group.visible)return;
   people.forEach(({person,toast,mug,throwing},i)=>{
    const phase=time*.9+i*2.4,drinking=Math.max(0,Math.sin(phase));person.rotation.x=.045*Math.sin(time*2+i);
    toast.rotation.z=2.0+drinking*.92;mug.rotation.z=-toast.rotation.z-drinking*.35;
@@ -44,10 +48,23 @@ export function addMooringParty(root,index){
   // Fixed-size particle pool. Coordinates are local, so heel and bobbing carry the party.
   const relative=wind*Math.PI/180+Math.PI+root.rotation.y,drift=Math.min(.9,strength/20);
   for(let i=0;i<count;i++){
-   const person=i%2,t=(time+i*.047)%3.4,v=t/3.4,spread=(i%13-6)*.05;
-   dummy.position.set(-1.4-person*.65+spread+Math.cos(relative)*drift*v,1.1+2.0*v-2.7*v*v,(person?1:-1)*.48+(i%9-4)*.045+Math.sin(relative)*drift*v);
+   const person=i%2,t=(time+i*.047)%3.4,v=t/3.4,spread=(i%19-9)*.09;
+   dummy.position.set(-1.4-person*.65+spread+Math.cos(relative)*drift*v,1.1+7*v-7.7*v*v,(person?1:-1)*.48+(i%17-8)*.08+Math.sin(relative)*drift*v);
    dummy.rotation.set(time*2+i,time*3+i*.7,time*2.5+i*.4);const size=v>.88?(1-v)/.12:1;dummy.scale.setScalar(Math.max(0,size));dummy.updateMatrix();confetti.setMatrixAt(i,dummy.matrix);
   }
   confetti.instanceMatrix.needsUpdate=true;
+  let glow=0;
+  for(let burst=0;burst<2;burst++){
+   const age=(time+burst*2.8)%5.6,launch=age<.9,height=9+burst*2,elapsed=Math.max(0,age-.9),fade=Math.max(0,1-elapsed/2.1),radius=elapsed*3.7;
+   glow=Math.max(glow,launch?0:Math.max(0,1-elapsed/.45)*18);
+   for(let j=0;j<sparksPerBurst;j++){
+    const k=burst*sparksPerBurst+j,vertical=1-2*(j+.5)/sparksPerBurst,angle=j*2.399963,ring=Math.sqrt(1-vertical*vertical);
+    dummy.position.set(-1.5+burst*2+(launch?0:radius*ring*Math.cos(angle)),launch?1+height*age/.9:height+1+radius*vertical-1.2*elapsed*elapsed,burst?1.8:-1.8);
+    if(!launch)dummy.position.z+=radius*ring*Math.sin(angle);
+    dummy.rotation.set(0,0,0);dummy.scale.setScalar(launch?(j===0?1.8:0):fade*(1+(j%3)*.18));dummy.updateMatrix();fireworks.setMatrixAt(k,dummy.matrix);
+    fireworks.setColorAt(k,new THREE.Color(launch?0xffe3a0:colors[(j+burst+Math.floor(time/5.6))%colors.length]));
+   }
+  }
+  flash.intensity=glow;fireworks.instanceMatrix.needsUpdate=true;fireworks.instanceColor.needsUpdate=true;
  }};
 }
