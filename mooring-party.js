@@ -41,16 +41,24 @@ export function addMooringParty(root,index){
  const flash=new THREE.PointLight(0xffd277,0,24,2);flash.name='Firework glow';flash.position.set(-1.5,8,0);group.add(flash);
  return {group,people,confetti,fireworks,setWinner(winner){group.visible=winner},update(time,wind,strength){if(!group.visible)return;
   people.forEach(({person,toast,mug,throwing},i)=>{
-   const phase=time*.9+i*2.4,drinking=Math.max(0,Math.sin(phase));person.rotation.x=.045*Math.sin(time*2+i);
-   toast.rotation.z=2.0+drinking*.92;mug.rotation.z=-toast.rotation.z-drinking*.35;
-   throwing.rotation.z=-2.15-.7*Math.sin(time*3+i);throwing.rotation.x=.25*Math.sin(time*2+i);
+   const phase=time*.9+i*2.4,drinking=Math.max(0,Math.sin(phase)),throwAge=(time+i*1.4)%2.8;
+   person.rotation.x=.09*Math.sin(time*2+i);person.rotation.z=.06*Math.sin(time*1.7+i);
+   toast.rotation.z=1.8+drinking*1.2+.18*Math.sin(time*4+i);toast.rotation.x=.45*Math.sin(time*2+i);
+   mug.rotation.z=-toast.rotation.z-drinking*.35;
+   // Broad overhead waves, with an upward flick as each handful leaves the crew.
+   throwing.rotation.z=-2.0-.95*Math.sin(time*3.5+i)-.45*Math.exp(-throwAge*8);
+   throwing.rotation.x=.8*Math.sin(time*2.8+i);
   });
-  // Fixed-size particle pool. Coordinates are local, so heel and bobbing carry the party.
+  // Each handful begins in a small spot above a sailor, spreads outward, then falls.
+  // Staggered throws and varied velocities avoid a permanent curtain around the boat.
   const relative=wind*Math.PI/180+Math.PI+root.rotation.y,drift=Math.min(.9,strength/20);
   for(let i=0;i<count;i++){
-   const person=i%2,t=(time+i*.047)%3.4,v=t/3.4,spread=(i%19-9)*.09;
-   dummy.position.set(-1.4-person*.65+spread+Math.cos(relative)*drift*v,1.1+7*v-7.7*v*v,(person?1:-1)*.48+(i%17-8)*.08+Math.sin(relative)*drift*v);
-   dummy.rotation.set(time*2+i,time*3+i*.7,time*2.5+i*.4);const size=v>.88?(1-v)/.12:1;dummy.scale.setScalar(Math.max(0,size));dummy.updateMatrix();confetti.setMatrixAt(i,dummy.matrix);
+   const person=i%2,seed=(Math.sin(i*127.1+17.3)*43758.5453)%1,r=Math.abs(seed),angle=i*2.399963;
+   const age=(time+person*1.4)%2.8-r*.09,t=Math.max(0,age),spread=(.5+1.3*r)*(1-Math.exp(-t*1.3))/1.3;
+   const y=1.22+(1.9+r*.9)*t-1.55*t*t,flutter=Math.sin(t*11+i)*Math.min(t,.4)*.07;
+   dummy.position.set(-1.4-person*.65+Math.cos(angle)*spread+Math.cos(relative)*drift*t*t*.22+flutter,y,(person?1:-1)*.48+Math.sin(angle)*spread+Math.sin(relative)*drift*t*t*.22);
+   dummy.rotation.set(time*2+i,time*3+i*.7,time*2.5+i*.4);
+   const size=age<0||y<.18?0:Math.min(1,Math.max(0,(y-.18)/.35));dummy.scale.setScalar(size);dummy.updateMatrix();confetti.setMatrixAt(i,dummy.matrix);
   }
   confetti.instanceMatrix.needsUpdate=true;
   let glow=0;
