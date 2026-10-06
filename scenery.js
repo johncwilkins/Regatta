@@ -83,8 +83,32 @@ export function addCoastalTown(scene){
   const top=new THREE.Mesh(new THREE.ConeGeometry(w*.79,3.2,4),roof);top.rotation.y=Math.PI/4;top.scale.z=d/w;top.position.y=h+2.6;house.add(top);
   box(house,'Front porch',w+1,.3,3,0,1,-5.6,wood);box(house,'Porch awning',w+1,.2,3,0,4.2,-5.6,trim);
   for(const x of [-w*.42,w*.42])box(house,'Porch post',.18,3,.18,x,2.6,-6.6,trim);
-  for(const x of [-w*.28,w*.28])for(const y of [3,h>6?6:3]){box(house,'Window frame',1.8,1.9,.14,x,y,-4.56,trim);box(house,'Blue window',1.5,1.6,.16,x,y,-4.65,glass);}
+  for(const x of [-w*.28,w*.28])for(const y of (h>6?[3,6]:[3])){box(house,'Window frame',1.8,1.9,.14,x,y,-4.56,trim);box(house,'Blue window',1.5,1.6,.16,x,y,-4.65,glass);}
   box(house,'Front door',1.3,2.6,.16,0,2.5,-4.6,material(0x526e7e));
+ }
+ // Twelve separate waterfront neighborhoods give steering bearings through 360 degrees.
+ const villageSiding=houseColors.map(material),treeMats=[0x376749,0x4c7951,0x648648].map(material);
+ for(let sector=0;sector<12;sector++){
+  const a=sector*Math.PI/6,radius=340+(sector%3)*16;
+  const village=new THREE.Group();village.name='Horizon waterfront neighborhood';village.position.set(radius*Math.cos(a),0,radius*Math.sin(a));village.rotation.y=Math.PI/2-a;town.add(village);
+  const beach=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1.5,24),sand);beach.name='Neighborhood sandy shore';beach.scale.set(62,1,31);beach.position.y=.1;village.add(beach);
+  const greens=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.3,24),grass);greens.scale.set(59,1,26);greens.position.set(0,1,3);village.add(greens);
+  for(let i=0;i<3;i++){
+   const house=new THREE.Group();house.name='Horizon shore house';house.position.set((i-1)*30,1.2,3+(i%2)*8);village.add(house);const h=7+(sector+i)%3*2,w=11;
+   box(house,'Coastal siding',w,h,10,0,h/2,0,villageSiding[(sector+i)%villageSiding.length]);
+   const top=new THREE.Mesh(new THREE.ConeGeometry(9.2,4,4),roof);top.rotation.y=Math.PI/4;top.scale.z=.9;top.position.y=h+1.9;house.add(top);
+   box(house,'Porch deck',13,.4,3,0,1,-6,wood);box(house,'Porch roof',13,.25,3,0,4.5,-6,trim);
+   for(const x of [-5,5])box(house,'Porch column',.25,3.5,.25,x,2.8,-7,trim);
+   for(const x of [-3,3]){box(house,'Window surround',2.3,2.8,.2,x,h*.65,-5.1,trim);box(house,'Waterfront window',1.9,2.4,.22,x,h*.65,-5.24,glass);}
+   box(house,'Front door',1.5,3,.2,0,1.6,-5.15,villageSiding[(sector+i+2)%villageSiding.length]);
+  }
+  for(let i=0;i<6;i++){
+   const tree=new THREE.Group();tree.name='Horizon coastal tree';tree.position.set(-49+i*19,1.2,i%2?20:-7);village.add(tree);
+   const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.4,.6,7,6),wood);trunk.position.y=3.5;tree.add(trunk);
+   const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(5,1),treeMats[(sector+i)%3]);crown.position.y=8.5;crown.scale.y=1.25;tree.add(crown);
+  }
+  box(village,'Waterfront pier',3,.5,21,0,1,-30,wood);for(const z of [-23,-32,-39])box(village,'Pier piling',.4,2.6,.4,1.3,.2,z,wood);
+  if(sector%3===0){const lighthouse=new THREE.Mesh(new THREE.CylinderGeometry(2,3,24,10),trim);lighthouse.name='Coastal lighthouse';lighthouse.position.set(46,13,0);village.add(lighthouse);const lantern=box(village,'Lighthouse lantern',4,3,4,46,26.5,0,glass);const cap=new THREE.Mesh(new THREE.ConeGeometry(3.4,3,10),roof);cap.position.set(46,29.5,0);village.add(cap);}
  }
  for(let i=0;i<40;i++){
   const tree=new THREE.Group();tree.name='Coastal shade tree';tree.position.set(-374+(i*47)%535,1.3,273+(i%4)*13);town.add(tree);
@@ -109,11 +133,18 @@ export function addArcticHarbor(scene){
  const group=new THREE.Group();group.name='Arctic scenery';scene.add(group);
  const mat=color=>new THREE.MeshStandardMaterial({color,roughness:.9}),snow=mat(0xe9f4f7),rock=mat(0x657681),timber=mat(0x8e5840),trim=mat(0xe5dbc8),roof=mat(0x3b5969),glass=new THREE.MeshStandardMaterial({color:0x8fc8d8,roughness:.35,metalness:.1});
  const box=(parent,name,w,h,d,x,y,z,m)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.name=name;o.position.set(x,y,z);parent.add(o);return o};
- // Snow-covered ridges stay outside even the long race-course area.
- for(const [x,z,w,d,h]of [[270,-320,100,75,52],[-240,-300,150,80,62],[30,340,145,100,78],[-330,140,110,75,57],[350,160,100,70,67],[-310,320,130,90,72]]){
-  const ridge=new THREE.Group();ridge.name='Snowy arctic ridge';ridge.position.set(x,0,z);group.add(ridge);
+ // Color the snow directly on one mountain surface: overlapping snow shells flickered.
+ const mountainMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.95});
+ for(let sector=0;sector<12;sector++){
+  const a=sector*Math.PI/6,radius=350+(sector%3)*17,w=95+(sector%4)*13,d=70+(sector%3)*10,h=46+(sector%5)*8;
+  const ridge=new THREE.Group();ridge.name='Snowy arctic ridge';ridge.position.set(radius*Math.cos(a),0,radius*Math.sin(a));ridge.rotation.y=Math.PI/2-a;group.add(ridge);
   const base=new THREE.Mesh(new THREE.CylinderGeometry(1,1,2,12),rock);base.scale.set(w*.65,1,d*.65);base.position.y=.2;ridge.add(base);
-  for(let j=0;j<3;j++){const peak=new THREE.Mesh(new THREE.ConeGeometry(w*.36,h*(1-j*.15),5),rock);peak.scale.z=d/w;peak.position.set((j-1)*w*.24,h*(1-j*.15)/2,0);peak.rotation.y=j*.35;ridge.add(peak);const cap=new THREE.Mesh(new THREE.ConeGeometry(w*.36*.56,h*(1-j*.15)*.56,5),snow);cap.scale.z=d/w;cap.position.copy(peak.position);cap.position.y+=h*(1-j*.15)*.22;cap.rotation.copy(peak.rotation);ridge.add(cap);}
+  for(let j=0;j<3;j++){
+   const height=h*(1-j*.15),radius=w*.36,geo=new THREE.ConeGeometry(radius,height,5,8),p=geo.attributes.position,colors=[];
+   const stone=new THREE.Color(0x657681),ice=new THREE.Color(0xe9f4f7);
+   for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),line=height*.02+height*.035*Math.sin(x*.15+j)*Math.cos(z*.13);const blend=THREE.MathUtils.smoothstep(y,line-height*.045,line+height*.045),c=stone.clone().lerp(ice,blend);colors.push(c.r,c.g,c.b);}
+   geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));const peak=new THREE.Mesh(geo,mountainMaterial);peak.name='Single-surface snowy mountain';peak.scale.z=d/w;peak.position.set((j-1)*w*.24,height/2,0);peak.rotation.y=j*.35;ridge.add(peak);
+  }
  }
  const club=new THREE.Group();club.name='Northern Lights Yacht Club';club.position.set(185,0,-220);group.add(club);
  const shore=new THREE.Mesh(new THREE.CylinderGeometry(1,1,2,32),rock);shore.scale.set(75,1,36);shore.position.set(0,.2,25);club.add(shore);
