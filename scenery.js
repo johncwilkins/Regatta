@@ -45,7 +45,7 @@ export function addCommitteeBoat(scene){
  for(const z of [-.94,.94])box('Canopy support',.07,1.2,.07,-2.95,1.4,z,cream);
  box('Bow rail',1.05,.08,.06,2.4,1.23,0,cream);
  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,2.9,8),cream);pole.position.set(-.3,3.5,0);root.add(pole);
- const flag=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.65),new THREE.MeshBasicMaterial({color:0xf3df37,side:THREE.DoubleSide}));flag.position.set(.3,4.6,0);root.add(flag);
+ const flag=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.65),new THREE.MeshBasicMaterial({color:0xf3df37,side:THREE.DoubleSide}));flag.name='Committee boat preview flag';flag.position.set(.3,4.6,0);root.add(flag);root.userData.previewFlag=flag;
  scene.add(root);return root;
 }
 

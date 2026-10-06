@@ -31,7 +31,7 @@ export function addMooringParty(root,index){
   mesh(throwing,new THREE.SphereGeometry(.055,8,6),skin[i],0,-.29,0);
   people.push({person,toast,mug,throwing});
  }
- const colors=[0xffcf42,0xf45d74,0x35d8cc,0x739aff,0xf7efff],count=384;
+ const colors=[0xffcf42,0xf45d74,0x35d8cc,0x739aff,0xf7efff],count=192;
  const confetti=new THREE.InstancedMesh(new THREE.BoxGeometry(.12,.025,.07),new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false}),count);confetti.name='Winner mooring confetti';confetti.frustumCulled=false;group.add(confetti);
  for(let i=0;i<count;i++)confetti.setColorAt(i,new THREE.Color(colors[i%colors.length]));
  const dummy=new THREE.Object3D();
