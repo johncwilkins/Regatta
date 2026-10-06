@@ -25,8 +25,8 @@ export function addPassingLife(scene){
 export function addNavigationLights(root){
  const group=new THREE.Group();group.name='Night navigation lights';group.visible=false;
  const n=32,data=new Uint8Array(n*n*4);for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=(y*n+x)*4,r=Math.hypot((x+.5-n/2)/(n/2),(y+.5-n/2)/(n/2));data[i]=data[i+1]=data[i+2]=255;data[i+3]=Math.round(255*Math.max(0,1-r)**2)}const glow=new THREE.DataTexture(data,n,n,THREE.RGBAFormat);glow.needsUpdate=true;
- for(const [name,color,x,z]of [['White stern light',0xffffff,-3.48,0],['Red port bow light',0xff1928,.18,-.48],['Green starboard bow light',0x20ff65,.18,.48]]){
-  const lamp=new THREE.Group();lamp.name=name;lamp.position.set(x,.48,z);
+ for(const [name,color,x,z]of [['White stern light',0xffffff,-3.48,0],['Red port bow light',0xff1928,.18,-.36],['Green starboard bow light',0x20ff65,.18,.36]]){
+  const lamp=new THREE.Group();lamp.name=name;lamp.position.set(x,z===0?.48:.379,z);
   const bulb=new THREE.Mesh(new THREE.SphereGeometry(.065,8,6),new THREE.MeshBasicMaterial({color,toneMapped:false}));lamp.add(bulb);
   const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glow,color,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));halo.scale.set(.65,.65,.65);lamp.add(halo);
   const light=new THREE.PointLight(color,2.2,5,2);light.name=name+' illumination';lamp.add(light);group.add(lamp);
