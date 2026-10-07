@@ -23,7 +23,10 @@ export function advanceBoat(speed,windDirection,windKnots,sheet,dt,shadow=0,gust
  const force=.5*1.225*(apparent.strength*KNOT)**2*7.06*drive;
  const physicalSpeed=speed/ARCADE_SPEED;const resistance=14*physicalSpeed+18*physicalSpeed*physicalSpeed;
  const shadowDrag=resistance;const shadowDrive=force*(1-.15*Math.max(0,Math.min(1,shadow/.65)));
- const nextSpeed=dt===0?speed:Math.max(MIN_SPEED,speed+(shadowDrive-shadowDrag)/55*ARCADE_SPEED*dt);
+ // When the sail loses drive, carry way through a tack or a brief head-up at a mark.
+ // The sail still luffs immediately; hull momentum fades over seconds rather than a snap stop.
+ const coastFloor=drive===0?speed*Math.exp(-dt/7):MIN_SPEED;
+ const nextSpeed=dt===0?speed:Math.max(MIN_SPEED,coastFloor,speed+(shadowDrive-shadowDrag)/55*ARCADE_SPEED*dt);
  return {shadow,speed:nextSpeed,advance:(speed+nextSpeed)*.5*dt,apparent,sail,force};
 }
 export function relativeWind(worldDegrees,heading){return ((worldDegrees-heading*180/Math.PI+540)%360+360)%360-180}
